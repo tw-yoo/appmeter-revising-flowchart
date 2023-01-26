@@ -1,0 +1,21 @@
+flowchart TD
+	GpsRecordListForEach[GpsRecordList.forEach]
+	subgraph UpdateCandidate
+		direction TB
+	IfGpsRecordEligible{GpsRecord.eligible?}
+	GpsRecordEligible[let coord: GpsRecord.lat, GpsRecord.lng] %% 이 방법이 아니고 
+	GpsRecordNotEligible[let coord: latest eligible GpsRecord.lat, GpsRecord.lng]
+
+	GetRoadLinkList[coord에서 주변 RoadNode 찾기 <br> 범위: 0.0007]
+    RoadLinkListForEach[RoadLinkList.forEach]
+	IfClosestPointOnTheEdge{RoadNode.ord == k or RoadNode.ord == null?}
+
+	GpsRecordListForEach --> IfGpsRecordEligible
+	IfGpsRecordEligible --No--> GpsRecordEligible
+	IfGpsRecordEligible --Yes--> GpsRecordNotEligible
+
+	GpsRecordEligible & GpsRecordNotEligible --> GetRoadLinkList
+	GetRoadLinkList --> RoadLinkListForEach --> IfClosestPointOnTheEdge
+	IfClosestPointOnTheEdge --Yes--> Add[Add to Node Candidate]
+	IfClosestPointOnTheEdge --No--> NotAdd[Continue]
+	end

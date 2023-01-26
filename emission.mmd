@@ -1,0 +1,8 @@
+flowchart TD
+    I[/GpsRecordList/]
+    GpsRecordListLoop[GpsRecordList.forEach]
+    NodeCandidateListLoop[GpsRecord.NodeCandidateList.forEach]
+    
+    GetEmission[1. Get distance from ]
+
+    I --> GpsRecordListLoop --> NodeCandidateListLoop
