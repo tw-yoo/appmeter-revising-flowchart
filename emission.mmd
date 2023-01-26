@@ -1,8 +1,10 @@
 flowchart TD
     I[/GpsRecordList/]
     GpsRecordListLoop[GpsRecordList.forEach]
+    LatestEligibleCoord[Get latest eligible GpsRecord.coord where ord >= k]
     NodeCandidateListLoop[GpsRecord.NodeCandidateList.forEach]
-    
-    GetEmission[1. Get distance from ]
 
-    I --> GpsRecordListLoop --> NodeCandidateListLoop
+    GetEmission[1. Get distance between NodeCandidate and GpsRecord.coord <br> 2. Calculate emission probability of NodeCandidate]
+
+    I --> GpsRecordListLoop --> LatestEligibleCoord --> NodeCandidateListLoop
+    NodeCandidateListLoop --> GetEmission
