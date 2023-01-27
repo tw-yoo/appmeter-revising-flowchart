@@ -1,0 +1,16 @@
+flowchart TD
+	A[/MapMatchingReq/]
+	B(GpsRecordList)
+  subgraph GpsRecord
+    direction TB
+    subgraph Eligibility
+      E1{ord == 0 or the distance <br> from the last eligible <br> GpsRecord over 30m?} 
+			ET[GpsRecord.eligible == true]
+			EF[GpsRecord.eligible == false]
+
+			E1 --Yes--> ET
+			E1 --No--> EF
+    end
+  end
+
+A --> GpsRecord --> B
