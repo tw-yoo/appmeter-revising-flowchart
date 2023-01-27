@@ -1,21 +1,79 @@
-flowchart TD
-	GpsRecordListForEach[GpsRecordList.forEach]
+flowchart LR
+	Input[/req: movementIdOrdMapping/]
+	ReqForEach["
+		req.forEach
+		(movement, ordList) ->
+	"]
+	OrdListForEach["
+		ordList.forEach
+		ord ->
+	"]
 	subgraph UpdateCandidate
 		direction TB
-	IfGpsRecordEligible{GpsRecord.eligible?}
-	GpsRecordEligible[let coord: GpsRecord.lat, GpsRecord.lng] %% 이 방법이 아니고 
-	GpsRecordNotEligible[let coord: latest eligible GpsRecord.lat, GpsRecord.lng]
 
-	GetRoadLinkList[coord에서 주변 RoadNode 찾기 <br> 범위: 0.0007]
-    RoadLinkListForEach[RoadLinkList.forEach]
-	IfClosestPointOnTheEdge{RoadNode.ord == k or RoadNode.ord == null?}
+		GetRoadNodeList["
+			lastEligibleGpsRecord = movement.gpsRecord
+			.maxOf{ord < min(ordList)}
 
-	GpsRecordListForEach --> IfGpsRecordEligible
-	IfGpsRecordEligible --No--> GpsRecordEligible
-	IfGpsRecordEligible --Yes--> GpsRecordNotEligible
+			buffer = buffer of lastEligibleGpsRecord (r = 0.0007)
 
-	GpsRecordEligible & GpsRecordNotEligible --> GetRoadLinkList
-	GetRoadLinkList --> RoadLinkListForEach --> IfClosestPointOnTheEdge
-	IfClosestPointOnTheEdge --Yes--> Add[Add to Node Candidate]
-	IfClosestPointOnTheEdge --No--> NotAdd[Continue]
+			get RoadLinkList from movement.roadLink
+			where movement.roadLink intersect with buffer
+		"]
+		RoadLinkListForEach["
+			RoadLinkList.forEach
+			roadLink ->
+		"]
+
+		FindClosestPoint["find the closest point from lastEligibleGpsRecord to roadLink "]
+
+		Add["movement.nodeCandidate.add(closest point)"]
+
+		IfClosestPointOnTheEdge{"
+			Is the closest point located
+			on the end of the roadLink?
+		"}
+
+		NodeOnTheEdge["node = Node on the edge of the roadLink"]
+
+		NodeOrdChecking{"
+			node.ord == null || 
+			node.ord == ord
+		"}
+
+		subgraph SplitRoadLink
+			direction TB
+			Projection[Project coord to RoadLink]
+			LinkCoordListFor["
+				for (i = 0 until RoadLink.coords.lastIndex)
+					subRoadLink = RoadLink.coords[i] to RoadLink.coords[i+1]
+			"]
+			IfProjOnSubLink{"
+				projected coord
+				on the subRoadLink?
+			"}
+			
+			ProjOnSubLink["
+				NewNode: projected coord.ord = k
+				FirstRoadLink: from RoadLink.source to projected coord 
+				SecondRoadLink: from projected coord to RoadLink.target
+			"]
+			NewNodeCandidate["movement.nodeCandidate.add(NewNode)"]
+
+			Projection --> LinkCoordListFor --> IfProjOnSubLink
+			IfProjOnSubLink --yes--> ProjOnSubLink --> NewNodeCandidate --> Terminate((break))
+			IfProjOnSubLink --no--> LinkCoordListFor
+		end
+
+		ReqForEach --> OrdListForEach --> GetRoadNodeList
+		GetRoadNodeList --> RoadLinkListForEach --> FindClosestPoint --> IfClosestPointOnTheEdge
+
+		IfClosestPointOnTheEdge -- yes --> NodeOnTheEdge --> NodeOrdChecking
+		IfClosestPointOnTheEdge -- no --> Projection
+		
+		NodeOrdChecking --Yes--> Add
+		NodeOrdChecking --No--> d((continue))
+	
 	end
+
+Input --> UpdateCandidate

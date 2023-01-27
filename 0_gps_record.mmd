@@ -1,16 +1,53 @@
 flowchart TD
-	A[/MapMatchingReq/]
-	B(GpsRecordList)
+	Input[/req: MapMatchingReq/]
+  ReqDataForEach["req.data.forEach"]
+  Output["
+    (output)
+    movementIdOrdMapping
+  "]
+
+  subgraph Variables
+    Movement["
+      movement: Movement(id, ord, gpsRecordList, count,
+      roadLink, roadNode, emission, transition, route)
+      
+      movementIdOrdMapping: Map<String, List<Int>>
+    "] 
+  end
+
   subgraph GpsRecord
-    direction TB
+    direction LR
     subgraph Eligibility
-      E1{ord == 0 or the distance <br> from the last eligible <br> GpsRecord over 30m?} 
-			ET[GpsRecord.eligible == true]
-			EF[GpsRecord.eligible == false]
+      E1{"
+        ord == 0 or the distance 
+        from the last eligible 
+        GpsRecord over 30m?
+      "} 
+			ET[gpsRecord.eligible == true]
+			EF[gpsRecord.eligible == false]
 
 			E1 --Yes--> ET
 			E1 --No--> EF
     end
+    
+    subgraph Assignment
+      direction TB
+      Ord["
+      movementId = data.movementId
+
+      gpsRecord.ord=movement.ord++
+
+      movementIdOrdMapping[movementId]
+      .add(gpsRecord.ord)
+      "]
+      Add["movement.gpsRecordList.add(gpsRecord)"]
+
+      Ord --> Add
+
+    end
+
+    Eligibility --> Assignment
+
   end
 
-A --> GpsRecord --> B
+Input --> ReqDataForEach --> GpsRecord --> Output

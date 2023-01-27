@@ -1,0 +1,74 @@
+flowchart LR    
+    Input[/req: movementIdOrdMapping/]
+
+    subgraph CreateGraph
+            direction TB
+            GraphInput[/"
+                (input) 
+                movement: Movement
+            "/]
+            Graph["graph = Graph()"]
+            AddNodeAndLink["graph.addAllNodes(movement.roadNode)"]
+
+            roadLinkForEach["
+                movement.roadLink.forEach
+                link -> 
+            "]
+
+            IfLinkDirectWay{"link goes direct?"}
+            IfLinkReverseWay{"link goes reverse?"}
+
+            AddDirectLink["graph.addLink(
+            source: link.source, 
+            target: link.target,
+            weight: link.length)"]
+            AddReverseLink["graph.addLink(
+            source: link.target, 
+            target: link.source,
+            weight: link.weight)"]
+
+            Continue("continue@forEach")
+
+
+            GraphInput --> Graph --> AddNodeAndLink --> roadLinkForEach
+            roadLinkForEach --> IfLinkDirectWay
+            roadLinkForEach --> IfLinkReverseWay
+
+            IfLinkDirectWay --yes--> AddDirectLink
+             
+            IfLinkDirectWay --no--> Continue
+            IfLinkReverseWay --no--> Continue
+
+            IfLinkReverseWay --yes--> AddReverseLink
+
+        end
+
+    subgraph Transition
+        direction TB
+
+        ReqForEach["
+            req.forEach
+            (movement, ordList) ->
+        "]
+        OrdListForEach["
+            for (i=0 until ordList.lastIndex):
+            start = movement.gpsRecordList[i]
+            end = movement.gpsRecordList[i+1]
+        "]
+
+        GetPath["
+            get path from start to end
+        "]
+
+        AddTransition["
+            get transition prob 
+            (direct distance, dijkstra distance)
+
+            movement.transitionList.add(Transition)
+        "]
+
+        funCreateGraph[["CreateGraph(movement)"]] --> ReqForEach --> OrdListForEach --> GetPath --> AddTransition
+
+    end
+
+Input --> Transition

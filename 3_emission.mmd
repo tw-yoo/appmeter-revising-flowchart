@@ -1,10 +1,30 @@
-flowchart TD
-    I[/GpsRecordList/]
-    GpsRecordListLoop[GpsRecordList.forEach]
-    LatestEligibleCoord[Get latest eligible GpsRecord.coord where ord >= k]
-    NodeCandidateListLoop[GpsRecord.NodeCandidateList.forEach]
+flowchart LR
+    Input[/req: movementIdOrdMapping/]
 
-    GetEmission[1. Get distance between NodeCandidate and GpsRecord.coord <br> 2. Calculate emission probability of NodeCandidate]
+    subgraph Emission
 
-    I --> GpsRecordListLoop --> LatestEligibleCoord --> NodeCandidateListLoop
-    NodeCandidateListLoop --> GetEmission
+        ReqForEach["
+            req.forEach
+            (movement, ordList) ->
+
+            lastEligibleGpsRecord = movement.gpsRecord
+			.maxOf{ord < min(ordList)}
+        "]
+
+        NodeCandidateListLoop["
+            lastEligibleGpsRecord.NodeCandidateList.forEach
+            nodeCandidate ->
+        "]
+
+        GetEmission["
+            1. Get distance between nodeCandidate and lastEligibleGpsRecord 
+            2. Calculate emission probability of NodeCandidate
+        "]
+
+        AddEmission["
+            movement.emissionList.add(Emission)
+        "]
+        
+        ReqForEach --> NodeCandidateListLoop --> GetEmission --> AddEmission
+    end
+    Input --> Emission

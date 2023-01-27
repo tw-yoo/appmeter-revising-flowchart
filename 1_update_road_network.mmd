@@ -1,41 +1,35 @@
-flowchart TD
-	I[/GpsRecordList/]
-	GpsRecordListForEach[GpsRecordList.forEach]
-	GpsRecordListBuffer[Make LineString to polygon. buffer: 0.003]
+flowchart LR
+
+	I[/req: movementIdOrdMapping/]
+	GpsRecordListForEach["
+		req.forEach
+		(movement, ordList) ->
+	"]
 	subgraph UpdateRoadNetwork
 		direction TB
-		IfGpsRecordEligible{GpsRecord.eligible?}
-		GpsRecordEligible[let coord: GpsRecord.lat, GpsRecord.lng]	
-		GpsRecordNotEligible[let coord: latest eligible GpsRecord.lat, GpsRecord.lng]
 
-		Buffer[Get RoadLink around coord]
-		GetRoadLink[GpsRecord에서 각 RoadLink까지 가까운 점 찾기 <br> 범위: 0.003]
-		IfClosestPointOnTheEdge{Is the closest point located <br> on the edge of the RoadLink?}
-		IfYes[Assign the closest point <br> as a node candidate]
+		UpdateOrdList["
+			lastEligibleGpsRecord = movement.gpsRecord
+			.maxOf{ord < min(ordList)}
+			?: 0
 
-		subgraph SplitRoadLink
-			direction TB
-			Projection[Project coord to RoadLink]
-			LinkCoordListFor[for i = 0 until RoadLink.coords.lastIndex: <br> subRoadLink = RoadLink.coords.i to RoadLink.coords.i+1]
-			IfProjOnSubLink{projected coord <br> on the subRoadLink?}
-			
-			ProjOnSubLink[NewNode: projected coord. ord = k <br> FirstRoadLink: from RoadLink.source to projected coord <br> SecondRoadLink: from projected coord to RoadLink.target]
-			NewNodeCandidate[Assign NewNode as a node candidate]
+			ordList
+			.add(lastEligibleGpsRecord.ord)
 
-			Projection --> LinkCoordListFor --> IfProjOnSubLink
-			IfProjOnSubLink --yes--> ProjOnSubLink --> NewNodeCandidate --> Terminate(( ))
-			IfProjOnSubLink --no. i+1--> LinkCoordListFor
-		end
+		"]
+
+		GetLatestEligibleGpsRecord["
+			make buffer(r=0.003) with gpsRecord list:
+			ordList.map{ it -> latest gpsRecord where ord <= it and eligible }
+		"]
+
+		GetRoadLink["
+			get roadLinks which intersect with buffer
+			get roadNodes which intersect with buffer
+		"]
 
 
-	GpsRecordListForEach --> IfGpsRecordEligible
-	IfGpsRecordEligible --Yes--> GpsRecordEligible
-	IfGpsRecordEligible --No--> GpsRecordNotEligible
-
-	GpsRecordEligible & GpsRecordNotEligible --> Buffer
-	Buffer --> GetRoadLink --> IfClosestPointOnTheEdge
-	IfClosestPointOnTheEdge --Yes--> IfYes
-	IfClosestPointOnTheEdge --No--> Projection
+	GpsRecordListForEach --> UpdateOrdList --> GetLatestEligibleGpsRecord --> GetRoadLink
 	end
 
 I --> UpdateRoadNetwork
