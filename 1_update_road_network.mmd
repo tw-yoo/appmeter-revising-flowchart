@@ -1,35 +1,31 @@
-flowchart LR
+flowchart TB
 
 	I[/req: movementIdOrdMapping/]
-	GpsRecordListForEach["
-		req.forEach
-		(movement, ordList) ->
-	"]
 	subgraph UpdateRoadNetwork
-		direction TB
 
-		UpdateOrdList["
+	subgraph req.forEach 
+		it["(movement, ordList) ->"]
+
+		UpdateOrdList2["
 			lastEligibleGpsRecord = movement.gpsRecord
 			.maxOf{ord < min(ordList)}
 			?: 0
-
-			ordList
-			.add(lastEligibleGpsRecord.ord)
-
 		"]
 
-		GetLatestEligibleGpsRecord["
-			make buffer(r=0.003) with gpsRecord list:
-			ordList.map{ it -> latest gpsRecord where ord <= it and eligible }
+		GetLatestEligibleGpsRecord2["
+			make buffer(r=0.003) polygon with gpsRecord list with: 
+			ordList.map { it -> latest gpsRecord where ord <= it and eligible }
 		"]
 
-		GetRoadLink["
-			get roadLinks which intersect with buffer
+		GetRoadLink2["
+			get and add roadLinks which intersect with buffer
 			get roadNodes which intersect with buffer
 		"]
 
+		it --> UpdateOrdList2 --> GetLatestEligibleGpsRecord2 --> GetRoadLink2
 
-	GpsRecordListForEach --> UpdateOrdList --> GetLatestEligibleGpsRecord --> GetRoadLink
+	end
+		
 	end
 
 I --> UpdateRoadNetwork

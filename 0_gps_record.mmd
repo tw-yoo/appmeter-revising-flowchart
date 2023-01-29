@@ -1,6 +1,5 @@
 flowchart TD
 	Input[/req: MapMatchingReq/]
-  ReqDataForEach["req.data.forEach"]
   Output["
     (output)
     movementIdOrdMapping
@@ -9,15 +8,16 @@ flowchart TD
   subgraph Variables
     Movement["
       movement: Movement(id, ord, gpsRecordList, count,
-      roadLink, roadNode, emission, transition, route)
+      roadLink, roadNode, emissionList, transitionList, routeList)
       
       movementIdOrdMapping: Map<String, List<Int>>
     "] 
   end
 
-  subgraph GpsRecord
+  subgraph req.data.forEach
     direction LR
     subgraph Eligibility
+      direction LR
       E1{"
         ord == 0 or the distance 
         from the last eligible 
@@ -50,4 +50,4 @@ flowchart TD
 
   end
 
-Input --> ReqDataForEach --> GpsRecord --> Output
+Input --> req.data.forEach --> Output
