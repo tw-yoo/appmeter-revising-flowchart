@@ -1,41 +1,72 @@
-flowchart LR
+flowchart TB
     Input[/req: movementIdOrdMapping/]
-    subgraph Route
+    subgraph UpdateRoute
         subgraph req.forEach
             direction TB
-            itReq["(movement, ordList) ->"]
+            itReq[/"(movement, ordList) ->"/]
 
             subgraph ordList.forLoop
                 direction TB
                 forCondition["for (i=0 until ordList.lastIndex):"]
-                startEnd["
+                startEnd[/"
                     start = movement.gpsRecordList[i]
                     end = movement.gpsRecordList[i+1]
-                "]
+                "/]
 
-                emissionRoute["
-                    curEmissionList = movement.emissionList where ord == i+1
-                    prevRouteList = movement.routeList where ord == i
-                "]
+                emissionRoute[/"
+                    curEmissionList = movement.emissionList.filter{ ord == i+1 }
+                    prevRouteList = movement.routeList.filter{ ord == i }
+                "/]
 
                 subgraph curEmissionList.forEach
                     direction TB
-                    itEmission["emission ->"]
-                    GetTransitionList["
+                    itEmission[/"emission ->"/]
+
+                    BaseValues[/"
+                        maxTransition = null
+                        maxRouteProb = 0.0
+                    "/]
+
+                    subgraph UpdateRouteProb
+                        direction TB
+                        input[/"routeProb"/]
+                        query{"routeProb > maxRouteProb?"}
+                        updateRouteProb["
+                            routeProb = maxRouteProb
+                            maxTransition = transition
+                        "]
+
+                        input --> query --> updateRouteProb
+
+                    end
+
+                    GetTransitionList[/"
                         transitionList = movement.transitionList.filter{
                         ord == i+1 && endNodeId == emission.nodeId}
+                    "/]
+
+                    subgraph transitionList.forEach
+                        direction TB
+                        itTransition["transition ->"]
+                        prevRouteProb["
+                            prevRoute = prevRouteList.where{ it.lastNodeId == transition.startNodeId }
+
+                            routeProb = prevRoute.prob * transition.prob * emission.prob
+                        "]
+
+                        itTransition --> prevRouteProb --> UpdateRouteProb
+                    end
+
+                    CreateRoute["
+                        create Route object(maxTransition, maxRouteProb)
                     "]
 
-                    GetMaxProbRoute["
-                        getMaxProbRoute from transitionList where 
-                        (prevRoute = prevRouteList.lastNodeId == transition.startNodeId &&
-                        routeProb = prevRoute.prob * transition.prob * emission.prob)
-                        with maxRouteProb
+                    AddRoute["
+
+                        movement.routeList.add(route)
                     "]
 
-                    AddRoute["movement.routeList.add(route)"]
-
-                    itEmission --> GetTransitionList --> GetMaxProbRoute --> AddRoute
+                    itEmission --> BaseValues -->  GetTransitionList --> transitionList.forEach  --> CreateRoute --> AddRoute
                 end
 
                 forCondition --> startEnd --> emissionRoute --> curEmissionList.forEach
@@ -45,4 +76,5 @@ flowchart LR
         end
     end
 
-Input --> Route
+    Termination("Termination UpdateRoute")
+Input --> UpdateRoute --> Termination

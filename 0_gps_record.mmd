@@ -5,16 +5,10 @@ flowchart TD
     movementIdOrdMapping
   "]
 
-  subgraph Variables
-    Movement["
-      movement: Movement(id, ord, gpsRecordList, count,
-      roadLink, roadNode, emissionList, transitionList, routeList)
-      
-      movementIdOrdMapping: Map<String, List<Int>>
-    "] 
-  end
+  subgraph CreateGpsRecord
+    direction TB
 
-  subgraph req.data.forEach
+    subgraph req.data.forEach
     direction LR
     subgraph Eligibility
       direction LR
@@ -32,15 +26,16 @@ flowchart TD
     
     subgraph Assignment
       direction TB
-      Ord["
-      movementId = data.movementId
+      Ord[/"
+        movementId = data.movementId
 
-      gpsRecord.ord=movement.ord++
-
-      movementIdOrdMapping[movementId]
-      .add(gpsRecord.ord)
+        gpsRecord.ord=movement.ord++
+      "/]
+      Add["
+        movement.gpsRecordList.add(gpsRecord)
+        movementIdOrdMapping[movementId]
+        .add(gpsRecord.ord)
       "]
-      Add["movement.gpsRecordList.add(gpsRecord)"]
 
       Ord --> Add
 
@@ -49,5 +44,15 @@ flowchart TD
     Eligibility --> Assignment
 
   end
+  end
 
-Input --> req.data.forEach --> Output
+  subgraph Variables
+    Movement["
+      movement: Movement(id, ord, gpsRecordList, count,
+      roadLink, roadNode, emissionList, transitionList, routeList)
+      
+      movementIdOrdMapping: Map<String, List<Int>>
+    "] 
+  end
+
+Input --> CreateGpsRecord --> Output

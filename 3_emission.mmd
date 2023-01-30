@@ -1,24 +1,26 @@
-flowchart LR
+flowchart TB
     Input[/req: movementIdOrdMapping/]
 
-    subgraph Emission
+    subgraph UpdateEmission
 
         subgraph req.forEach
             direction TB 
             
-            itReq["(movement, ordList) ->"]
-            lastEligibleGpsRecord["
-                lastEligibleGpsRecord = movement.gpsRecord
-                .maxOf{ord < min(ordList)}
-            "]
+            itReq[/"(movement, ordList) ->"/]
 
-            subgraph lastEligibleGpsRecord.NodeCandidateList.forEach
+            subgraph ordList.forEach
                 direction TB
-                itNodeCandidate["nodeCandidate ->"]
+                itOrdList[/"ord ->"/]
+                lastEligibleGpsRecord[/"gpsRecord = movement.gpsRecordList(ord)"/]
+
+            subgraph gpsRecord.NodeCandidateList.forEach
+                direction TB
+                itNodeCandidate[/"nodeCandidate ->"/]
 
                 GetEmission["
-                    1. Get distance between nodeCandidate and lastEligibleGpsRecord 
+                    1. Get distance between nodeCandidate and gpsRecord 
                     2. Calculate emission probability of NodeCandidate
+                    3. Create Emission object
                 "]
 
                 AddEmission["
@@ -28,9 +30,13 @@ flowchart LR
                 itNodeCandidate --> GetEmission --> AddEmission
             end
 
-            itReq --> lastEligibleGpsRecord --> lastEligibleGpsRecord.NodeCandidateList.forEach
+            itOrdList --> lastEligibleGpsRecord --> gpsRecord.NodeCandidateList.forEach
+            end
+
+            itReq --> ordList.forEach
 
         end
     end
     
-    Input --> Emission
+    Termination("Termination UpdateEmission")
+    Input --> UpdateEmission --> Termination

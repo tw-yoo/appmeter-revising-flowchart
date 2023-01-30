@@ -3,29 +3,36 @@ flowchart TB
 	I[/req: movementIdOrdMapping/]
 	subgraph UpdateRoadNetwork
 
-	subgraph req.forEach 
-		it["(movement, ordList) ->"]
+		subgraph req.forEach 
+			it[/"(movement, ordList) ->"/]
 
-		UpdateOrdList2["
-			lastEligibleGpsRecord = movement.gpsRecord
-			.maxOf{ord < min(ordList)}
-			?: 0
-		"]
+			UpdateOrdList[/"
+				lastEligibleGpsRecord = movement.gpsRecordList
+				.maxOf{ord < min(ordList)}
+				?: movement.GpsRecordList[0]
+			"/]
 
-		GetLatestEligibleGpsRecord2["
-			make buffer(r=0.003) polygon with gpsRecord list with: 
-			ordList.map { it -> latest gpsRecord where ord <= it and eligible }
-		"]
+			GetLatestEligibleGpsRecord["
+				make buffer(r = 0.003) polygon with gpsRecord list with: 
+				ordList.map { it -> latest gpsRecord.first{ ord <= it and eligible } }
+			"]
 
-		GetRoadLink2["
-			get and add roadLinks which intersect with buffer
-			get roadNodes which intersect with buffer
-		"]
+			GetRoadLink[/"
+				intersectsRoadLinks = get roadLinks from DB which intersect with buffer
+				intersectsRoadNodes = get roadNodes from DB which intersect with buffer
+			"/]
 
-		it --> UpdateOrdList2 --> GetLatestEligibleGpsRecord2 --> GetRoadLink2
+			AddRoadLink["
+				movement.roadLink.addAll(intersectsRoadLinks)
+				movement.roadNode.addAll(intersectsRoadNodes)
+			"]
 
-	end
+			it --> UpdateOrdList --> GetLatestEligibleGpsRecord --> GetRoadLink --> AddRoadLink
+
+		end
 		
 	end
 
-I --> UpdateRoadNetwork
+	Termination("Termination UpdateRoadNetwork")
+
+I --> UpdateRoadNetwork --> Termination

@@ -1,16 +1,16 @@
-flowchart LR
+flowchart TB
 	Input[/req: movementIdOrdMapping/]
 
-	subgraph UpdateCandidate
+	subgraph UpdateNodeCandidate
 		direction TB
 
         subgraph req.forEach
             direction TB
-            itReq["(movement, ordList) ->"]
+            itReq[/"(movement, ordList) ->"/]
 
             subgraph ordList.forEach
                 direction TB
-                itOrd["ord ->"]
+                itOrd[/"ord ->"/]
 
                 GetRoadNodeList["
                 lastEligibleGpsRecord = movement.gpsRecord
@@ -24,7 +24,7 @@ flowchart LR
 
             subgraph roadLink.forEach
                 direction TB
-                itRoadLink["roadLink ->"]
+                itRoadLink[/"roadLink ->"/]
 
                 FindClosestPoint["find the closest point from lastEligibleGpsRecord to roadLink "]
                 Add["movement.nodeCandidate.add(closest point)"]
@@ -54,11 +54,15 @@ flowchart LR
                     "}
                     
                     ProjOnSubLink["
-                        NewNode: projected coord.ord = k
-                        FirstRoadLink: from RoadLink.source to projected coord 
-                        SecondRoadLink: from projected coord to RoadLink.target
+                        newNode: projected coord.ord = k
+                        firstRoadLink: from RoadLink.source to projected coord 
+                        secondRoadLink: from projected coord to RoadLink.target
                     "]
-                    NewNodeCandidate["movement.nodeCandidate.add(NewNode)"]
+                    NewNodeCandidate["
+						movement.nodeCandidate.add(newNode)
+						movement.roadLink.add(firstRoadLink)
+						movement.roadLink.add(secondRoadLink)
+					"]
 
                     Projection --> LinkCoordListFor --> IfProjOnSubLink
                     IfProjOnSubLink --yes--> ProjOnSubLink --> NewNodeCandidate --> Terminate((break))
@@ -83,5 +87,6 @@ flowchart LR
         end
 
 	end
-
-Input --> UpdateCandidate
+	
+	Termination("Termination UpdateNodeCandidate")
+	Input --> UpdateNodeCandidate --> Termination
