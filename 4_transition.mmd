@@ -10,36 +10,35 @@ flowchart LR
             Graph["graph = Graph()"]
             AddNodeAndLink["graph.addAllNodes(movement.roadNode)"]
 
-            roadLinkForEach["
-                movement.roadLink.forEach
-                link -> 
-            "]
+            subgraph movement.roadLink.forEach
+                direction TB
 
-            IfLinkDirectWay{"link goes direct?"}
-            IfLinkReverseWay{"link goes reverse?"}
+                itRoadLink["link ->"]
+                IfLinkDirectWay{"link goes direct?"}
+                IfLinkReverseWay{"link goes reverse?"}
 
-            AddDirectLink["graph.addLink(
-            source: link.source, 
-            target: link.target,
-            weight: link.length)"]
-            AddReverseLink["graph.addLink(
-            source: link.target, 
-            target: link.source,
-            weight: link.weight)"]
+                AddDirectLink["graph.addLink(
+                source: link.source, 
+                target: link.target,
+                weight: link.length)"]
+                AddReverseLink["graph.addLink(
+                source: link.target, 
+                target: link.source,
+                weight: link.weight)"]
 
-            Continue("continue@forEach")
+                Continue("continue@forEach")
 
+                itRoadLink --> IfLinkDirectWay
+                itRoadLink --> IfLinkReverseWay
 
-            GraphInput --> Graph --> AddNodeAndLink --> roadLinkForEach
-            roadLinkForEach --> IfLinkDirectWay
-            roadLinkForEach --> IfLinkReverseWay
+                IfLinkDirectWay --yes--> AddDirectLink
+                IfLinkDirectWay --no--> Continue
+                IfLinkReverseWay --no--> Continue
+                IfLinkReverseWay --yes--> AddReverseLink
 
-            IfLinkDirectWay --yes--> AddDirectLink
-             
-            IfLinkDirectWay --no--> Continue
-            IfLinkReverseWay --no--> Continue
+            end
 
-            IfLinkReverseWay --yes--> AddReverseLink
+            GraphInput --> Graph --> AddNodeAndLink --> movement.roadLink.forEach
 
         end
 
