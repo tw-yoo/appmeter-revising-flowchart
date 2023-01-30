@@ -1,79 +1,87 @@
 flowchart LR
 	Input[/req: movementIdOrdMapping/]
-	ReqForEach["
-		req.forEach
-		(movement, ordList) ->
-	"]
-	OrdListForEach["
-		ordList.forEach
-		ord ->
-	"]
+
 	subgraph UpdateCandidate
 		direction TB
 
-		GetRoadNodeList["
-			lastEligibleGpsRecord = movement.gpsRecord
-			.maxOf{ord < min(ordList)}
+        subgraph req.forEach
+            direction TB
+            itReq["(movement, ordList) ->"]
 
-			buffer = buffer of lastEligibleGpsRecord (r = 0.0007)
+            subgraph ordList.forEach
+                direction TB
+                itOrd["ord ->"]
 
-			get RoadLinkList from movement.roadLink
-			where movement.roadLink intersect with buffer
-		"]
-		RoadLinkListForEach["
-			RoadLinkList.forEach
-			roadLink ->
-		"]
+                GetRoadNodeList["
+                lastEligibleGpsRecord = movement.gpsRecord
+                .maxOf{ord < min(ordList)}
 
-		FindClosestPoint["find the closest point from lastEligibleGpsRecord to roadLink "]
+                buffer = buffer of lastEligibleGpsRecord (r = 0.0007)
 
-		Add["movement.nodeCandidate.add(closest point)"]
+                get RoadLinkList from movement.roadLink
+                where movement.roadLink intersect with buffer
+            "]
 
-		IfClosestPointOnTheEdge{"
-			Is the closest point located
-			on the end of the roadLink?
-		"}
+            subgraph roadLink.forEach
+                direction TB
+                itRoadLink["roadLink ->"]
 
-		NodeOnTheEdge["node = Node on the edge of the roadLink"]
+                FindClosestPoint["find the closest point from lastEligibleGpsRecord to roadLink "]
+                Add["movement.nodeCandidate.add(closest point)"]
 
-		NodeOrdChecking{"
-			node.ord == null || 
-			node.ord == ord
-		"}
+                IfClosestPointOnTheEdge{"
+                    Is the closest point located
+                    on the end of the roadLink?
+                "}
 
-		subgraph SplitRoadLink
-			direction TB
-			Projection[Project coord to RoadLink]
-			LinkCoordListFor["
-				for (i = 0 until RoadLink.coords.lastIndex)
-					subRoadLink = RoadLink.coords[i] to RoadLink.coords[i+1]
-			"]
-			IfProjOnSubLink{"
-				projected coord
-				on the subRoadLink?
-			"}
-			
-			ProjOnSubLink["
-				NewNode: projected coord.ord = k
-				FirstRoadLink: from RoadLink.source to projected coord 
-				SecondRoadLink: from projected coord to RoadLink.target
-			"]
-			NewNodeCandidate["movement.nodeCandidate.add(NewNode)"]
+                NodeOnTheEdge["node = Node on the edge of the roadLink"]
 
-			Projection --> LinkCoordListFor --> IfProjOnSubLink
-			IfProjOnSubLink --yes--> ProjOnSubLink --> NewNodeCandidate --> Terminate((break))
-			IfProjOnSubLink --no--> LinkCoordListFor
-		end
+                NodeOrdChecking{"
+                    node.ord == null || 
+                    node.ord == ord
+                "}
 
-		ReqForEach --> OrdListForEach --> GetRoadNodeList
-		GetRoadNodeList --> RoadLinkListForEach --> FindClosestPoint --> IfClosestPointOnTheEdge
+                subgraph SplitRoadLink
+                    direction TB
+                    Projection[Project coord to RoadLink]
+                    LinkCoordListFor["
+                        for (i = 0 until RoadLink.coords.lastIndex)
+                            subRoadLink = RoadLink.coords[i] to RoadLink.coords[i+1]
+                    "]
+                    IfProjOnSubLink{"
+                        projected coord
+                        on the subRoadLink?
+                    "}
+                    
+                    ProjOnSubLink["
+                        NewNode: projected coord.ord = k
+                        FirstRoadLink: from RoadLink.source to projected coord 
+                        SecondRoadLink: from projected coord to RoadLink.target
+                    "]
+                    NewNodeCandidate["movement.nodeCandidate.add(NewNode)"]
 
-		IfClosestPointOnTheEdge -- yes --> NodeOnTheEdge --> NodeOrdChecking
-		IfClosestPointOnTheEdge -- no --> Projection
-		
-		NodeOrdChecking --Yes--> Add
-		NodeOrdChecking --No--> d((continue))
-	
+                    Projection --> LinkCoordListFor --> IfProjOnSubLink
+                    IfProjOnSubLink --yes--> ProjOnSubLink --> NewNodeCandidate --> Terminate((break))
+                    IfProjOnSubLink --no--> LinkCoordListFor
+                end
+
+                itRoadLink --> FindClosestPoint --> IfClosestPointOnTheEdge
+                IfClosestPointOnTheEdge -- yes --> NodeOnTheEdge --> NodeOrdChecking
+                IfClosestPointOnTheEdge -- no --> Projection
+                
+                NodeOrdChecking --Yes--> Add
+                NodeOrdChecking --No--> d((continue))
+
+            end
+
+
+            itOrd --> GetRoadNodeList --> roadLink.forEach
+            end
+
+            itReq --> ordList.forEach
+
+        end
+
 	end
 
 Input --> UpdateCandidate

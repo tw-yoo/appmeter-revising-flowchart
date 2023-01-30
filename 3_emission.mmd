@@ -3,28 +3,34 @@ flowchart LR
 
     subgraph Emission
 
-        ReqForEach["
-            req.forEach
-            (movement, ordList) ->
+        subgraph req.forEach
+            direction TB 
+            
+            itReq["(movement, ordList) ->"]
+            lastEligibleGpsRecord["
+                lastEligibleGpsRecord = movement.gpsRecord
+                .maxOf{ord < min(ordList)}
+            "]
 
-            lastEligibleGpsRecord = movement.gpsRecord
-			.maxOf{ord < min(ordList)}
-        "]
+            subgraph lastEligibleGpsRecord.NodeCandidateList.forEach
+                direction TB
+                itNodeCandidate["nodeCandidate ->"]
 
-        NodeCandidateListLoop["
-            lastEligibleGpsRecord.NodeCandidateList.forEach
-            nodeCandidate ->
-        "]
+                GetEmission["
+                    1. Get distance between nodeCandidate and lastEligibleGpsRecord 
+                    2. Calculate emission probability of NodeCandidate
+                "]
 
-        GetEmission["
-            1. Get distance between nodeCandidate and lastEligibleGpsRecord 
-            2. Calculate emission probability of NodeCandidate
-        "]
+                AddEmission["
+                    movement.emissionList.add(Emission)
+                "]
 
-        AddEmission["
-            movement.emissionList.add(Emission)
-        "]
-        
-        ReqForEach --> NodeCandidateListLoop --> GetEmission --> AddEmission
+                itNodeCandidate --> GetEmission --> AddEmission
+            end
+
+            itReq --> lastEligibleGpsRecord --> lastEligibleGpsRecord.NodeCandidateList.forEach
+
+        end
     end
+    
     Input --> Emission

@@ -1,47 +1,48 @@
 flowchart LR
     Input[/req: movementIdOrdMapping/]
     subgraph Route
-        GpsRecordListForEach["
-            req.forEach1
-            (movement, ordList) ->
-	    "]
+        subgraph req.forEach
+            direction TB
+            itReq["(movement, ordList) ->"]
 
-        OrdListForLoop["
-            for (i=0 until ordList.lastIndex):
-            start = movement.gpsRecordList[i]
-            end = movement.gpsRecordList[i+1]
-        "]
+            subgraph ordList.forLoop
+                direction TB
+                forCondition["for (i=0 until ordList.lastIndex):"]
+                startEnd["
+                    start = movement.gpsRecordList[i]
+                    end = movement.gpsRecordList[i+1]
+                "]
 
-        GetPrevAndCurRouteList["
-            curEmissionList = movement.emissionList where ord == i+1
-            prevRouteList = movement.routeList where ord == i
-        "]
+                emissionRoute["
+                    curEmissionList = movement.emissionList where ord == i+1
+                    prevRouteList = movement.routeList where ord == i
+                "]
 
-        EmissionListForEach["
-            curEmissionList.forEach
-            emission -> 
-        "]
+                subgraph curEmissionList.forEach
+                    direction TB
+                    itEmission["emission ->"]
+                    GetTransitionList["
+                        transitionList = movement.transitionList.filter{
+                        ord == i+1 && endNodeId == emission.nodeId}
+                    "]
 
-        GetMaxProbRoute["
-            transitionList = movement.transitionList where
-            ord == i+1 && endNodeId == emission.nodeId
+                    GetMaxProbRoute["
+                        getMaxProbRoute from transitionList where 
+                        (prevRoute = prevRouteList.lastNodeId == transition.startNodeId &&
+                        routeProb = prevRoute.prob * transition.prob * emission.prob)
+                        with maxRouteProb
+                    "]
 
-            getMaxProbRoute from transitionList where 
-            (prevRoute = prevRouteList.lastNodeId == transition.startNodeId &&
-            routeProb = prevRoute.prob * transition.prob * emission.prob)
-            with maxRouteProb
-            
-        "]
+                    AddRoute["movement.routeList.add(route)"]
 
-        AddRoute["
-            movement.routeList.add(route)
-        "]
+                    itEmission --> GetTransitionList --> GetMaxProbRoute --> AddRoute
+                end
 
+                forCondition --> startEnd --> emissionRoute --> curEmissionList.forEach
 
-
-        GpsRecordListForEach --> OrdListForLoop --> GetPrevAndCurRouteList 
-        GetPrevAndCurRouteList --> EmissionListForEach --> GetMaxProbRoute
-        GetMaxProbRoute --> AddRoute
+            end
+            itReq --> ordList.forLoop
+        end
     end
 
 Input --> Route

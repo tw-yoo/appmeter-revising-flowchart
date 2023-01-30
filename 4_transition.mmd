@@ -46,28 +46,31 @@ flowchart LR
     subgraph Transition
         direction TB
 
-        ReqForEach["
-            req.forEach
-            (movement, ordList) ->
-        "]
-        OrdListForEach["
-            for (i=0 until ordList.lastIndex):
-            start = movement.gpsRecordList[i]
-            end = movement.gpsRecordList[i+1]
-        "]
+        subgraph req.forEach
+            direction TB
 
-        GetPath["
-            get path from start to end
-        "]
+            itReq["(movement, ordList) ->"]
 
-        AddTransition["
-            get transition prob 
-            (direct distance, dijkstra distance)
+            OrdListForEach["
+                for (i=0 until ordList.lastIndex):
+                start = movement.gpsRecordList[i]
+                end = movement.gpsRecordList[i+1]
+            "]
 
-            movement.transitionList.add(Transition)
-        "]
+            GetPath["
+                get path from start to end
+            "]
 
-        funCreateGraph[["CreateGraph(movement)"]] --> ReqForEach --> OrdListForEach --> GetPath --> AddTransition
+            AddTransition["
+                get transition prob 
+                (direct distance, dijkstra distance)
+
+                movement.transitionList.add(Transition)
+            "]
+
+            itReq --> funCreateGraph[["CreateGraph(movement)"]] --> OrdListForEach --> GetPath --> AddTransition
+
+        end
 
     end
 
